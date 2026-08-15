@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Env / secrets
+.env
+
+# Generated data (keep folders, ignore contents)
+data/*.json
+outputs/images/*.png
+outputs/images/*.jpg
+outputs/bulletins/*.json
+!data/.gitkeep
+!outputs/images/.gitkeep
+!outputs/bulletins/.gitkeep
+
+# Local models pulled by Ollama are NOT stored in repo
+models/*
+!models/.gitkeep
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+
+# Demo video is large - track with Git LFS or link instead if too big
+demo/*.mp4
