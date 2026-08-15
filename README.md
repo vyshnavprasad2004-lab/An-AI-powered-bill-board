@@ -1,4 +1,4 @@
-# AI Student Info Board
+# VYSHNAV PRASAD M - 2582412
 
 A physical kiosk that watches multiple disaster/hazard feeds and news
 sources, cross-checks stories across sources, and uses a **local LLM**
