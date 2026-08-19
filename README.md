@@ -166,8 +166,8 @@ chromium --kiosk http://localhost:8000
 
 ## Screenshots
 
-See `docs/screenshots/` — add board screenshots here (normal rotation and
-the alert takeover).
+<img width="1456" height="819" alt="image" src="https://github.com/user-attachments/assets/b24d7cda-40d5-4a11-b264-18f1b481ce23" />
+
 
 ## Demo video
 
