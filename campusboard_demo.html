@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Info Board — Interactive Demo</title>
+<style>
+  :root {
+    --bg: #0B1220;
+    --surface: #141B2C;
+    --surface-alt: #1B2438;
+    --border: #26314A;
+    --text: #F5F6FA;
+    --muted: #8892A6;
+    --teal: #2DD4BF;
+    --amber: #F2A623;
+    --red: #E24B4A;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+  }
+  #board { display: flex; flex-direction: column; height: 100vh; }
+
+  /* Ticker bar */
+  #ticker {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+  #ticker .brand { display: flex; align-items: center; gap: 12px; }
+  #ticker .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--teal);
+    animation: pulseDot 2.4s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) { #ticker .dot { animation: none; } }
+  @keyframes pulseDot { 0%,100%{opacity:1;} 50%{opacity:.4;} }
+  #ticker h1 {
+    font-size: 16px; font-weight: 700; letter-spacing: 0.08em;
+    margin: 0; text-transform: uppercase;
+  }
+  #ticker .tag {
+    font-size: 11px; color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    border: 1px solid var(--border); padding: 3px 8px; border-radius: 20px;
+    margin-left: 10px;
+  }
+  #clock {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    font-size: 15px; color: var(--muted); letter-spacing: 0.05em;
+  }
+
+  /* Main stage */
+  #stage {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    padding: 5vh 6vw; position: relative; min-height: 0;
+  }
+  .card {
+    display: flex; gap: 40px; align-items: center;
+    max-width: 1000px; width: 100%;
+    animation: fadeIn 0.5s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card .art {
+    width: 30vh; height: 37vh; max-width: 300px; max-height: 375px;
+    border-radius: 16px; border: 1px solid var(--border);
+    background: var(--surface-alt); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+  }
+  .card .art svg { width: 60%; height: 60%; }
+  .card .body { flex: 1; min-width: 0; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--teal);
+    margin-bottom: 16px;
+  }
+  .eyebrow.severity-medium { color: var(--amber); }
+  .eyebrow.severity-high { color: var(--red); }
+  .card h2 {
+    font-size: clamp(24px, 3.4vw, 40px); font-weight: 700; line-height: 1.15;
+    margin: 0 0 16px; letter-spacing: -0.01em;
+  }
+  .card p {
+    font-size: clamp(14px, 1.5vw, 18px); line-height: 1.6; color: var(--muted);
+    margin: 0 0 24px; max-width: 540px;
+  }
+
+  .verify { display: flex; align-items: center; gap: 10px; }
+  .verify .ticks { display: flex; gap: 6px; }
+  .verify .tick {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--border); transition: background .3s ease, transform .3s ease;
+  }
+  .verify .tick.filled { background: var(--teal); }
+  .verify .tick.pop { transform: scale(1.5); }
+  .verify .label {
+    font-size: 12px; color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+
+  #pagination {
+    display: flex; justify-content: center; gap: 8px;
+    padding-bottom: 20px; flex-shrink: 0;
+  }
+  #pagination .pip {
+    width: 24px; height: 3px; border-radius: 2px;
+    background: var(--border); transition: background .3s ease;
+  }
+  #pagination .pip.active { background: var(--teal); }
+
+  /* Priority alert takeover */
+  #alert-screen {
+    position: fixed; inset: 0; z-index: 50;
+    background: #2A0E0E;
+    display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 8vh 8vw;
+    border: 8px solid var(--red);
+  }
+  #alert-screen.show { display: flex; }
+  #alert-screen .tag {
+    font-size: 14px; font-weight: 700; letter-spacing: 0.15em;
+    text-transform: uppercase; color: var(--red);
+    margin-bottom: 22px;
+  }
+  #alert-screen h2 {
+    font-size: clamp(28px, 5vw, 52px); font-weight: 700; margin: 0 0 20px; max-width: 900px;
+  }
+  #alert-screen p {
+    font-size: clamp(16px, 2vw, 22px); color: #F2C9C9; max-width: 720px; margin: 0 0 18px;
+  }
+  #alert-screen .sources { font-size: 13px; color: #C98F8F; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    #alert-screen.show { animation: pulseBorder 2s ease-in-out infinite; }
+  }
+  @keyframes pulseBorder {
+    0%, 100% { border-color: var(--red); }
+    50% { border-color: #F29999; }
+  }
+
+  /* Demo control dock — not part of the real kiosk, only this preview */
+  #dock {
+    position: fixed; right: 18px; bottom: 18px; z-index: 100;
+    background: rgba(20, 27, 44, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    backdrop-filter: blur(6px);
+    width: 240px;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+  }
+  #dock .dock-title {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 10px; font-weight: 700;
+  }
+  #dock button {
+    display: block; width: 100%;
+    background: var(--surface-alt); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 10px; margin-bottom: 8px;
+    font-size: 12.5px; font-weight: 600; text-align: left;
+    cursor: pointer; transition: border-color .15s ease, background .15s ease;
+  }
+  #dock button:last-child { margin-bottom: 0; }
+  #dock button:hover { border-color: var(--teal); }
+  #dock button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+  #dock button.danger { border-color: rgba(226,75,74,0.4); color: #F2C9C9; }
+  #dock button.danger:hover { border-color: var(--red); }
+  #dock .hint { font-size: 10.5px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div id="ticker">
+    <div class="brand">
+      <span class="dot" id="status-dot"></span>
+      <h1>Student Info Board</h1>
+      <span class="tag">Demo · mock data</span>
+    </div>
+    <div id="clock"></div>
+  </div>
+
+  <div id="stage">
+    <div id="card-slot"></div>
+  </div>
+
+  <div id="pagination"></div>
+</div>
+
+<div id="alert-screen">
+  <div class="tag">Confirmed disaster alert</div>
+  <h2 id="alert-headline"></h2>
+  <p id="alert-body"></p>
+  <div class="sources" id="alert-sources"></div>
+</div>
+
+<div id="dock">
+  <div class="dock-title">Demo controls</div>
+  <button id="btn-next">Advance to next bulletin</button>
+  <button id="btn-verify">Simulate new source confirming story</button>
+  <button id="btn-alert" class="danger">Trigger confirmed disaster alert</button>
+  <button id="btn-resolve">Resolve alert → resume rotation</button>
+  <div class="hint">This panel simulates the pipeline (fetch → verify → LLM → image) so you can see the kiosk behave without running Ollama or Stable Diffusion locally.</div>
+</div>
+
+<script>
+// --- Mock illustrations (stand-ins for local Stable Diffusion output) ---
+const ART = {
+  weather: `<svg viewBox="0 0 100 100" fill="none"><ellipse cx="50" cy="42" rx="30" ry="18" fill="#1B2438" stroke="#26314A"/><ellipse cx="35" cy="38" rx="18" ry="13" fill="#1B2438" stroke="#26314A"/><g stroke="#2DD4BF" stroke-width="3" stroke-linecap="round"><line x1="30" y1="62" x2="24" y2="76"/><line x1="45" y1="62" x2="39" y2="76"/><line x1="60" y1="62" x2="54" y2="76"/></g></svg>`,
+  news: `<svg viewBox="0 0 100 100" fill="none"><rect x="20" y="30" width="60" height="46" rx="3" fill="#1B2438" stroke="#26314A"/><line x1="28" y1="42" x2="72" y2="42" stroke="#2DD4BF" stroke-width="3"/><line x1="28" y1="52" x2="72" y2="52" stroke="#26314A" stroke-width="3"/><line x1="28" y1="62" x2="58" y2="62" stroke="#26314A" stroke-width="3"/></svg>`,
+  campus: `<svg viewBox="0 0 100 100" fill="none"><polygon points="50,22 78,42 22,42" fill="#1B2438" stroke="#26314A"/><rect x="26" y="42" width="48" height="34" fill="#1B2438" stroke="#26314A"/><rect x="34" y="52" width="10" height="24" fill="#2DD4BF" opacity="0.85"/><rect x="56" y="52" width="10" height="24" fill="#26314A"/></svg>`,
+  quake: `<svg viewBox="0 0 100 100" fill="none"><circle cx="50" cy="42" r="18" stroke="#E24B4A" stroke-width="3"/><circle cx="50" cy="42" r="27" stroke="#E24B4A" stroke-width="1.5" opacity="0.5"/><path d="M18 70 L34 66 L44 74 L56 64 L68 72 L82 68" stroke="#E24B4A" stroke-width="3" stroke-linecap="round" fill="none"/></svg>`,
+};
+
+// --- Mock bulletin set (what a real pipeline run would produce) ---
+const BULLETINS = [
+  {
+    category: "disaster", severity: "medium", art: "weather",
+    headline: "Heavy rainfall advisory issued for the region",
+    bulletin: "Local weather authorities forecast heavy rain and possible waterlogging over the next 24 hours. Carry rain gear and allow extra travel time to campus.",
+    sources: 2,
+  },
+  {
+    category: "news", severity: "low", art: "campus",
+    headline: "University announces new merit scholarship program",
+    bulletin: "The scholarship office opened applications for the fall semester, covering up to full tuition for eligible students. Applications close in three weeks.",
+    sources: 1,
+  },
+  {
+    category: "news", severity: "low", art: "news",
+    headline: "Library extends hours during exam week",
+    bulletin: "The central library will stay open until 2 AM starting Monday to support students preparing for end-of-semester exams.",
+    sources: 1,
+  },
+];
+
+const ALERT = {
+  headline: "Magnitude 6.1 earthquake reported near the city",
+  bulletin: "Multiple agencies have confirmed a strong earthquake in the region. Stay away from windows and heavy furniture, and follow campus safety instructions if you feel shaking.",
+  sources: ["GDACS", "USGS"],
+};
+
+let bulletins = JSON.parse(JSON.stringify(BULLETINS));
+let index = 0;
+let rotateTimer = null;
+let alertShowing = false;
+
+function tick() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+}
+setInterval(tick, 1000);
+tick();
+
+function verifyTicksHtml(count, total) {
+  total = Math.max(total, count, 2);
+  let html = '<div class="ticks">';
+  for (let i = 0; i < total; i++) {
+    html += `<span class="tick ${i < count ? 'filled' : ''}"></span>`;
+  }
+  html += '</div>';
+  return html;
+}
+
+function renderCard() {
+  const b = bulletins[index];
+  const label = b.category === 'disaster' ? 'Disaster watch' : 'Campus news';
+  document.getElementById('card-slot').innerHTML = `
+    <div class="card">
+      <div class="art">${ART[b.art]}</div>
+      <div class="body">
+        <div class="eyebrow severity-${b.severity}">${label} &middot; ${b.severity}</div>
+        <h2>${b.headline}</h2>
+        <p>${b.bulletin}</p>
+        <div class="verify" id="verify-row">
+          ${verifyTicksHtml(b.sources, 2)}
+          <span class="label">confirmed by ${b.sources} source${b.sources === 1 ? '' : 's'}</span>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('pagination').innerHTML = bulletins.map((_, i) =>
+    `<span class="pip ${i === index ? 'active' : ''}"></span>`).join('');
+}
+
+function nextCard() {
+  index = (index + 1) % bulletins.length;
+  renderCard();
+}
+
+function startRotation() {
+  clearInterval(rotateTimer);
+  rotateTimer = setInterval(() => { if (!alertShowing) nextCard(); }, 6000);
+}
+
+function showAlert() {
+  alertShowing = true;
+  document.getElementById('alert-headline').textContent = ALERT.headline;
+  document.getElementById('alert-body').textContent = ALERT.bulletin;
+  document.getElementById('alert-sources').textContent = `Confirmed by: ${ALERT.sources.join(', ')}`;
+  document.getElementById('alert-screen').classList.add('show');
+}
+
+function hideAlert() {
+  alertShowing = false;
+  document.getElementById('alert-screen').classList.remove('show');
+}
+
+// --- Demo controls ---
+document.getElementById('btn-next').addEventListener('click', () => {
+  if (alertShowing) return;
+  nextCard();
+});
+
+document.getElementById('btn-verify').addEventListener('click', () => {
+  if (alertShowing) return;
+  const b = bulletins[index];
+  b.sources = Math.min(b.sources + 1, 5);
+  renderCard();
+  const ticks = document.querySelectorAll('#verify-row .tick');
+  const last = ticks[b.sources - 1];
+  if (last) {
+    last.classList.add('pop');
+    setTimeout(() => last.classList.remove('pop'), 300);
+  }
+});
+
+document.getElementById('btn-alert').addEventListener('click', showAlert);
+document.getElementById('btn-resolve').addEventListener('click', hideAlert);
+
+renderCard();
+startRotation();
+</script>
+</body>
+</html>
