@@ -167,6 +167,7 @@ chromium --kiosk http://localhost:8000
 ## Screenshots
 
 <img width="1456" height="819" alt="image" src="https://github.com/user-attachments/assets/b24d7cda-40d5-4a11-b264-18f1b481ce23" />
+<img width="1456" height="819" alt="image" src="https://github.com/user-attachments/assets/bedeaddf-b194-4415-b729-5f64701a38ba" />
 
 
 ## Demo video
